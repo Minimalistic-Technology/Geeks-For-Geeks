@@ -1,3 +1,27 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -14,12 +38,14 @@ interface RemoveProblemFormProps {
   isOpen: boolean;
   onClose: () => void;
   onProblemDeleted: (updatedProblems: Problem[]) => void;
+  refreshNotifications?: () => void;
 }
 
 const RemoveProblemForm: React.FC<RemoveProblemFormProps> = ({
   isOpen,
   onClose,
   onProblemDeleted,
+  refreshNotifications,
 }) => {
   const [problems, setProblems] = useState<Problem[]>([]);
   const [selectedProblemId, setSelectedProblemId] = useState("");
@@ -48,6 +74,34 @@ const RemoveProblemForm: React.FC<RemoveProblemFormProps> = ({
     }
   }, [isOpen]);
 
+  const createNotification = async (message: string) => {
+    try {
+      const userId = localStorage.getItem("userId") || "admin";
+      const response = await fetch(
+        "http://localhost:5000/api/gfg/notification/create",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            message,
+            type: "problem",
+            createdBy: "admin",
+            user: userId,
+            isRead: false,
+          }),
+        }
+      );
+      if (!response.ok) {
+        throw new Error("Failed to create notification");
+      }
+    } catch (err) {
+      console.error("Failed to create notification:", err);
+      setError("Failed to create notification");
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedProblemId) {
@@ -59,6 +113,9 @@ const RemoveProblemForm: React.FC<RemoveProblemFormProps> = ({
     setError(null);
 
     try {
+      const selectedProblem = problems.find(
+        (problem) => problem._id === selectedProblemId
+      );
       const response = await fetch(
         `http://localhost:5000/api/gfg/problems/${selectedProblemId}`,
         {
@@ -70,10 +127,14 @@ const RemoveProblemForm: React.FC<RemoveProblemFormProps> = ({
         throw new Error("Failed to delete problem");
       }
 
+      await createNotification(`${selectedProblem?.title} deleted`);
       const updatedProblems = problems.filter(
         (problem) => problem._id !== selectedProblemId
       );
       onProblemDeleted(updatedProblems);
+      if (refreshNotifications) {
+        refreshNotifications();
+      }
       setSelectedProblemId("");
       onClose();
     } catch (err: any) {

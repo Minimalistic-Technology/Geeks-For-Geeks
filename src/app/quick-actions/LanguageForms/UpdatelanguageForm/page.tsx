@@ -14,12 +14,14 @@ interface UpdateLanguageFormProps {
   isOpen: boolean;
   onClose: () => void;
   onLanguageUpdated: (updatedLanguages: Language[]) => void;
+  refreshNotifications?: () => void;
 }
 
 const UpdateLanguageForm: React.FC<UpdateLanguageFormProps> = ({
   isOpen,
   onClose,
   onLanguageUpdated,
+  refreshNotifications,
 }) => {
   const [languages, setLanguages] = useState<Language[]>([]);
   const [selectedLanguage, setSelectedLanguage] = useState<string>("");
@@ -57,6 +59,34 @@ const UpdateLanguageForm: React.FC<UpdateLanguageFormProps> = ({
       setError(null);
     }
   }, [isOpen]);
+
+  const createNotification = async (message: string) => {
+    try {
+      const userId = localStorage.getItem("userId") || "admin";
+      const response = await fetch(
+        "http://localhost:5000/api/gfg/notification/create",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            message,
+            type: "language",
+            createdBy: "admin",
+            user: userId,
+            isRead: false,
+          }),
+        }
+      );
+      if (!response.ok) {
+        throw new Error("Failed to create notification");
+      }
+    } catch (err) {
+      console.error("Failed to create notification:", err);
+      setError("Failed to create notification");
+    }
+  };
 
   const handleSelectLanguage = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedName = e.target.value;
@@ -104,6 +134,10 @@ const UpdateLanguageForm: React.FC<UpdateLanguageFormProps> = ({
       if (!response.ok) {
         throw new Error("Failed to update language");
       }
+
+      // Create notification for language update
+      await createNotification(`${updatedDetails.name} language updated`);
+
       const updatedLanguages = languages.map((lang) =>
         lang._id === languageToUpdate._id
           ? { ...lang, ...updatedDetails }
@@ -111,6 +145,12 @@ const UpdateLanguageForm: React.FC<UpdateLanguageFormProps> = ({
       );
       setLanguages(updatedLanguages);
       onLanguageUpdated(updatedLanguages);
+
+      // Refresh notifications if callback is provided
+      if (refreshNotifications) {
+        refreshNotifications();
+      }
+
       setError(null);
       onClose();
     } catch (err: any) {

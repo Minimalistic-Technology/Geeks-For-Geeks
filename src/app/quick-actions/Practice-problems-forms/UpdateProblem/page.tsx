@@ -15,12 +15,14 @@ interface UpdateProblemFormProps {
   isOpen: boolean;
   onClose: () => void;
   onProblemUpdated: (updatedProblems: Problem[]) => void;
+  refreshNotifications?: () => void;
 }
 
 const UpdateProblemForm: React.FC<UpdateProblemFormProps> = ({
   isOpen,
   onClose,
   onProblemUpdated,
+  refreshNotifications,
 }) => {
   const [problems, setProblems] = useState<Problem[]>([]);
   const [selectedProblemId, setSelectedProblemId] = useState("");
@@ -91,6 +93,33 @@ const UpdateProblemForm: React.FC<UpdateProblemFormProps> = ({
     }
   };
 
+  const createNotification = async (message: string) => {
+    try {
+      const response = await fetch(
+        "http://localhost:5000/api/gfg/notification/create",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            message,
+            type: "problem",
+            createdBy: "admin",
+            user: "admin",
+            isRead: false,
+          }),
+        }
+      );
+      if (!response.ok) {
+        throw new Error("Failed to create notification");
+      }
+    } catch (err) {
+      console.error("Failed to create notification:", err);
+      setError("Failed to create notification");
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedProblemId) {
@@ -118,10 +147,14 @@ const UpdateProblemForm: React.FC<UpdateProblemFormProps> = ({
       }
 
       const updatedProblem = await response.json();
+      await createNotification(`${title} updated`);
       const updatedProblems = problems.map((problem) =>
         problem._id === selectedProblemId ? updatedProblem : problem
       );
       onProblemUpdated(updatedProblems);
+      if (refreshNotifications) {
+        refreshNotifications();
+      }
       setSelectedProblemId("");
       setTitle("");
       setDifficulty("Easy");

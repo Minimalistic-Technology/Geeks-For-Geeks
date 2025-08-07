@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState } from "react";
@@ -7,11 +6,13 @@ import { X, Code2 } from "lucide-react";
 interface AddNewLanguageFormProps {
   isOpen: boolean;
   onClose: () => void;
+  refreshNotifications?: () => void;
 }
 
 const AddNewLanguageForm: React.FC<AddNewLanguageFormProps> = ({
   isOpen,
   onClose,
+  refreshNotifications,
 }) => {
   const [formData, setFormData] = useState({
     name: "",
@@ -20,6 +21,34 @@ const AddNewLanguageForm: React.FC<AddNewLanguageFormProps> = ({
   });
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+
+  const createNotification = async (message: string) => {
+    try {
+      const userId = localStorage.getItem("userId") || "admin";
+      const response = await fetch(
+        "http://localhost:5000/api/gfg/notification/create",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            message,
+            type: "language",
+            createdBy: "admin",
+            user: userId,
+            isRead: false,
+          }),
+        }
+      );
+      if (!response.ok) {
+        throw new Error("Failed to create notification");
+      }
+    } catch (err) {
+      console.error("Failed to create notification:", err);
+      setError("Failed to create notification");
+    }
+  };
 
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,12 +69,22 @@ const AddNewLanguageForm: React.FC<AddNewLanguageFormProps> = ({
         throw new Error(errorData.error || "Failed to add language");
       }
 
+      // Create notification for language addition
+      await createNotification(`${formData.name} language added`);
+
       setSuccess("Language added successfully!");
+
+      // Refresh notifications if callback is provided
+      if (refreshNotifications) {
+        refreshNotifications();
+      }
+
       setFormData({
         name: "",
         icon: "",
         description: "",
       });
+
       setTimeout(() => {
         onClose();
         setSuccess(null);

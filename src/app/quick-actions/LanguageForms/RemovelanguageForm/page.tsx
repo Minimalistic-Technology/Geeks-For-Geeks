@@ -14,12 +14,14 @@ interface RemoveLanguageFormProps {
   isOpen: boolean;
   onClose: () => void;
   onLanguageDeleted: (updatedLanguages: Language[]) => void;
+  refreshNotifications?: () => void;
 }
 
 const RemoveLanguageForm: React.FC<RemoveLanguageFormProps> = ({
   isOpen,
   onClose,
   onLanguageDeleted,
+  refreshNotifications,
 }) => {
   const [languages, setLanguages] = useState<Language[]>([]);
   const [selectedLanguage, setSelectedLanguage] = useState<string>("");
@@ -47,6 +49,34 @@ const RemoveLanguageForm: React.FC<RemoveLanguageFormProps> = ({
     }
   }, [isOpen]);
 
+  const createNotification = async (message: string) => {
+    try {
+      const userId = localStorage.getItem("userId") || "admin";
+      const response = await fetch(
+        "http://localhost:5000/api/gfg/notification/create",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            message,
+            type: "language",
+            createdBy: "admin",
+            user: userId,
+            isRead: false,
+          }),
+        }
+      );
+      if (!response.ok) {
+        throw new Error("Failed to create notification");
+      }
+    } catch (err) {
+      console.error("Failed to create notification:", err);
+      setError("Failed to create notification");
+    }
+  };
+
   const handleDeleteLanguage = async () => {
     if (!selectedLanguage) {
       setError("Please select a language to delete");
@@ -71,11 +101,21 @@ const RemoveLanguageForm: React.FC<RemoveLanguageFormProps> = ({
       if (!response.ok) {
         throw new Error("Failed to delete language");
       }
+
+      // Create notification for language deletion
+      await createNotification(`${languageToDelete.name} language deleted`);
+
       const updatedLanguages = languages.filter(
         (lang) => lang._id !== languageToDelete._id
       );
       setLanguages(updatedLanguages);
       onLanguageDeleted(updatedLanguages);
+
+      // Refresh notifications if callback is provided
+      if (refreshNotifications) {
+        refreshNotifications();
+      }
+
       setSelectedLanguage("");
       setError(null);
       onClose();

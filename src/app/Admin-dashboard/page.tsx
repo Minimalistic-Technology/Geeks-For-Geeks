@@ -19,9 +19,9 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import DocumentationForm from "../quick-actions/Sections/AddnewSectionform/page";
-import AddNewLanguageForm from "../quick-actions/AddnewLanguageform/page";
-import RemoveLanguageForm from "../quick-actions/RemovelanguageForm/page";
-import UpdateLanguageForm from "../quick-actions/UpdatelanguageForm/page";
+import AddNewLanguageForm from "../quick-actions/LanguageForms/AddnewLanguageform/page";
+import RemoveLanguageForm from "../quick-actions/LanguageForms/RemovelanguageForm/page";
+import UpdateLanguageForm from "../quick-actions/LanguageForms/UpdatelanguageForm/page";
 import UpdateDocumentationForm from "../quick-actions/Sections/UpdateSection/page";
 import RemoveDocumentationForm from "../quick-actions/Sections/RemoveSection/page";
 import AddProblemForm from "../quick-actions/Practice-problems-forms/AddProblem/page";

@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState } from "react";
@@ -15,12 +16,14 @@ interface AddProblemFormProps {
   isOpen: boolean;
   onClose: () => void;
   onProblemAdded: (newProblem: Problem) => void;
+  refreshNotifications?: () => void;
 }
 
 const AddProblemForm: React.FC<AddProblemFormProps> = ({
   isOpen,
   onClose,
   onProblemAdded,
+  refreshNotifications,
 }) => {
   const [title, setTitle] = useState("");
   const [difficulty, setDifficulty] = useState("Easy");
@@ -48,6 +51,53 @@ const AddProblemForm: React.FC<AddProblemFormProps> = ({
     }
   };
 
+  const createNotification = async (message: string) => {
+    try {
+      const userId = localStorage.getItem("userId") || "admin";
+      const response = await fetch("http://localhost:5000/api/gfg/notification/create", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+        },
+        body: JSON.stringify({
+          message,
+          type: "problem",
+          createdBy: "admin",
+          user: userId,
+          isRead: false,
+        }),
+      });
+      if (!response.ok) {
+        throw new Error(`Failed to create notification: ${response.statusText}`);
+      }
+    } catch (err) {
+      console.error("Failed to create notification:", err);
+      setError("Failed to create notification");
+    }
+  };
+
+  const createSearchEntry = async (problemId: string, title: string, tags: string[]) => {
+    try {
+      const searchEntries = [
+        { type: "problem", keyword: title, referenceId: problemId },
+        ...tags.map((tag) => ({ type: "problem", keyword: tag, referenceId: problemId })),
+      ];
+      const response = await fetch("http://localhost:5000/api/gfg/search-entry", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+        },
+        body: JSON.stringify(searchEntries),
+      });
+     
+    } catch (err) {
+      console.error("Failed to create search entry:", err);
+      
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -58,16 +108,22 @@ const AddProblemForm: React.FC<AddProblemFormProps> = ({
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
         },
         body: JSON.stringify({ title, difficulty, description, tags }),
       });
 
       if (!response.ok) {
-        throw new Error("Failed to add problem");
+        throw new Error(`Failed to add problem: ${response.statusText}`);
       }
 
       const newProblem = await response.json();
+      await createSearchEntry(newProblem._id, newProblem.title, newProblem.tags || []);
+      await createNotification(`${title} added`);
       onProblemAdded(newProblem);
+      if (refreshNotifications) {
+        refreshNotifications();
+      }
       setTitle("");
       setDifficulty("Easy");
       setDescription("");
