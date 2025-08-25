@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -260,8 +259,8 @@ const PracticeProblems: React.FC = () => {
                       key={problem._id}
                       className="bg-white shadow-md rounded-lg p-6 hover:shadow-lg"
                     >
-                      <div className="flex justify-between items-center">
-                        <div>
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1 pr-4">
                           <h3 className="text-lg font-bold">{problem.title}</h3>
                           <p className="text-gray-600 text-sm mt-1">
                             {problem.description}
@@ -283,9 +282,11 @@ const PracticeProblems: React.FC = () => {
                             </div>
                           )}
                         </div>
-                        <button className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">
-                          Solve Now
-                        </button>
+                        <div className="flex-shrink-0 flex items-center">
+                          <button className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 h-10 flex items-center justify-center min-w-[100px]">
+                            Solve Now
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ))
@@ -302,15 +303,6 @@ const PracticeProblems: React.FC = () => {
 };
 
 export default PracticeProblems;
-
-
-
-
-
-
-
-
-
 
 
 
